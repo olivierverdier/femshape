@@ -1,14 +1,14 @@
 """
 Module for computing shape invariants of planar curves using FEniCS.
 
-This module requires FEniCS version 1.5.
-
-Klas Modin, 2015-03-12
+This module has been tested with FEniCS version 2018.01
 """
 
 #import fenics as fem
 from dolfin import *
 from numpy import zeros, array, linspace, sin, cos, pi, vstack, hstack, meshgrid, ascontiguousarray
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib import cm
 
 class FEMShapeInvariant(object):
 	"""
@@ -33,12 +33,14 @@ class FEMShapeInvariant(object):
 		"""
 		super(FEMShapeInvariant, self).__init__()
 		
+		self.order = order
+		self.meshsize = meshsize
 		# Initialize FEM space
 		if space is not None:
 			self.V = space
 			self.mesh = self.V.mesh()
 		else:
-			self.mesh = RectangleMesh(-L, -L, L, L, meshsize, meshsize, "left")
+			self.mesh = RectangleMesh(Point(-L,-L), Point(L,L), meshsize, meshsize, "left")
 			#self.V = FunctionSpace(self.mesh, "DG", order)
 			self.V = FunctionSpace(self.mesh, "CG", order)
 		self.element = self.V.element() # Basic element type
@@ -73,6 +75,7 @@ class FEMShapeInvariant(object):
 		elif gamma.shape[1] is not 2:
 			gamma = gamma.T
 
+		self.gamma = gamma
 		# Create output vectors (the invariants)
 		invariants = zeros((self.V.dim(),2),dtype=float, order='F')
 
@@ -102,7 +105,7 @@ class FEMShapeInvariant(object):
 			# Evaluate basis functions associated with the selected cell
 			values = zeros(self.element.space_dimension())
 			vertex_coordinates = cell.get_vertex_coordinates()
-			self.element.evaluate_basis_all(values, array([xmid,ymid]), vertex_coordinates, 0)
+			values = self.element.evaluate_basis_all(array([xmid,ymid]), vertex_coordinates, 0)
 
 			# Find the global basis function indices associated with the selected cell
 			global_dofs = self.V.dofmap().cell_dofs(cell_index)
@@ -194,7 +197,7 @@ class FEMShapeInvariant(object):
 
 		# Reformat the vector of values
 		values = array(values)
-		xx[:,:] = values.reshape((size,size))
+		ux = values.reshape((size,size))
 
 		# Create the dy invariant matrix
 		values = []
@@ -207,52 +210,85 @@ class FEMShapeInvariant(object):
 
 		# Reformat the vector of values
 		values = array(values)
-		yy[:,:] = values.reshape((size,size))
+		uy = values.reshape((size,size))
 
 		# Return the two matrices
-		return (xx,yy)
+		return (xx,yy,ux,uy)
 
-	def calcM(self):
+	def calcM(self,show_plot=False,ret_inv=False,invariants=[],name=''):
 		import pylab as pl
 		import numpy as np
 		u=TrialFunction(self.V)
 		v=TestFunction(self.V)
 
 		# Choice of metric
-		# H^1
-		m = inner(grad(u),grad(v))*dx() + u*v*dx()
+		# H^1 metric with length scale c^2 = 1/10
+		m = 1./10*inner(grad(u),grad(v))*dx() + u*v*dx()
 		# L^2
-		#m = u*v*dx
+		mL2 = u*v*dx
 
-		M = assemble(m)
+		M = PETScMatrix()
+		assemble(m,tensor=M)
+		#M = assemble(m)
+		ML2 = assemble(mL2) 
+		
 		x = Function(self.V)
 		y = Function(self.V)
+		x2 = Function(self.V)
+		y2 = Function(self.V)
+		
+		if invariants != []:
+			self.invariant_dx.vector()[:] = invariants[:,0]
+			self.invariant_dy.vector()[:] = invariants[:,1]
 
-		solve(M,x.vector(),self.invariant_dx.vector())
-		solve(M,y.vector(),self.invariant_dy.vector())
+		solve(M,x2.vector(),self.invariant_dx.vector())
+		solve(M,y2.vector(),self.invariant_dy.vector())
 
-		# Plot the representer
-		(xrep,yrep) = self.mat_rep(x,y,size=64)
+		# H^2 metric
+		x3 = x2*v*dx()
+		y3 = y2*v*dx()
+		M3x = assemble(x3)
+		M3y = assemble(y3)
+		solve(M,x.vector(),M3x)
+		solve(M,y.vector(),M3y)
+		
+		if show_plot:
+			# Plot the representer
+			(xrep,yrep,ux,uy) = self.mat_rep(x,y,size=41)
 
-		pl.figure()
-		#pl.quiver(xrep,yrep)
-		#pl.contour(yep)
-		pl.contour(np.sqrt(xrep**2+yrep**2))
+			pl.figure()
+			pl.quiver(xrep,yrep,ux,uy)
+			pl.plot(self.gamma[:,0],self.gamma[:,1],linewidth=4)
+			pl.axis('tight')
+			pl.axis('equal')
+			if name!='':
+				name = name+str(self.order)+'_'+str(self.meshsize)+'rep.pdf'
+				pl.savefig(name,dpi=600)
 
-		# Check an edge to see that there is no boundary effect
-		#pl.figure()
-		#pl.plot(xrep[0,:])
-		#pl.figure()
-		#pl.plot(yrep[0,:])
+			fig = pl.figure()
+			ax = fig.gca(projection='3d')
+			surf = ax.plot_surface(xrep,yrep,np.sqrt(ux**2+uy**2), rstride=1, cstride=1, cmap=cm.coolwarm,linewidth=0, antialiased=False)
+			pl.title('Order '+str(self.order)+' Meshsize '+str(self.meshsize))
+			if name!='':
+				name = name+str(self.order)+'_'+str(self.meshsize)+'rep3.pdf'
+				pl.savefig(name,dpi=600)
 
-
-		# Plot \phi
-		pl.figure()
-		(xmat,ymat) = self.matrix_representation(size=64)
-		#pl.quiver(xmat,ymat)
-		pl.contour(np.sqrt(xmat**2+ymat**2))
+			#pl.figure()
+			#plot(self.mesh)
 
 		# Print the norm
-		print np.inner(x.vector().array(),self.invariant_dx.vector().array()) + np.inner(y.vector().array(),self.invariant_dy.vector().array()) 
+		H1 = x2.vector().inner(self.invariant_dx.vector())
+		H1 += y2.vector().inner(self.invariant_dy.vector())
+		H2 = x.vector().inner(self.invariant_dx.vector())
+		H2 += y.vector().inner(self.invariant_dy.vector())
+
+		# H1 = np.inner(x2.vector().array(),self.invariant_dx.vector().array()) + np.inner(y2.vector().array(),self.invariant_dy.vector().array()) 
+		# H2 = np.inner(x.vector().array(),self.invariant_dx.vector().array()) + np.inner(y.vector().array(),self.invariant_dy.vector().array()) 
+
+		if ret_inv:
+			return x2.vector()[:], y2.vector()[:], H1, H2, M.array(), self.invariant_dx.vector()[:], self.invariant_dy.vector()[:]
+		else:
+			return x.vector()[:], y.vector()[:], H1, H2
+		
 
 
