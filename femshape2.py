@@ -5,7 +5,8 @@ This module has been tested with FEniCS version 2018.01
 """
 
 #import fenics as fem
-from dolfin import *
+import dolfin as fem
+from dolfin import inner, dx, grad
 from numpy import zeros, array, linspace, sin, cos, pi, vstack, hstack, meshgrid, ascontiguousarray
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
@@ -40,18 +41,18 @@ class FEMShapeInvariant(object):
 			self.V = space
 			self.mesh = self.V.mesh()
 		else:
-			self.mesh = RectangleMesh(Point(-L,-L), Point(L,L), meshsize, meshsize, "left")
-			#self.V = FunctionSpace(self.mesh, "DG", order)
-			self.V = FunctionSpace(self.mesh, "CG", order)
+			self.mesh = fem.RectangleMesh(fem.Point(-L,-L), fem.Point(L,L), meshsize, meshsize, "left")
+			#self.V = fem.FunctionSpace(self.mesh, "DG", order)
+			self.V = fem.FunctionSpace(self.mesh, "CG", order)
 		self.element = self.V.element() # Basic element type
 		self.L = L
 		# Build bounding box trees
-		self.tree = BoundingBoxTree()
+		self.tree = fem.BoundingBoxTree()
 		self.tree.build(self.mesh)
 
 		# Create FEM functions for the invariants
-		self.invariant_dx = Function(self.V)
-		self.invariant_dy = Function(self.V)
+		self.invariant_dx = fem.Function(self.V)
+		self.invariant_dy = fem.Function(self.V)
 
 
 	def compute_invariants(self, gamma, closed = True):
@@ -88,7 +89,7 @@ class FEMShapeInvariant(object):
 
 			xmid = (xk+xkp1)/2
 			ymid = (yk+ykp1)/2
-			midpoint = Point(xmid, ymid)
+			midpoint = fem.Point(xmid, ymid)
 
 			# Compute which cells in mesh collide with point
 			collisions = self.tree.compute_entity_collisions(midpoint)
@@ -100,7 +101,7 @@ class FEMShapeInvariant(object):
 
 			# Pick first cell (may be several)
 			cell_index = collisions[0]
-			cell = Cell(self.mesh, cell_index)
+			cell = fem.Cell(self.mesh, cell_index)
 
 			# Evaluate basis functions associated with the selected cell
 			values = zeros(self.element.space_dimension())
@@ -218,8 +219,8 @@ class FEMShapeInvariant(object):
 	def calcM(self,show_plot=False,ret_inv=False,invariants=[],name=''):
 		import matplotlib.pyplot as pl
 		import numpy as np
-		u=TrialFunction(self.V)
-		v=TestFunction(self.V)
+		u=fem.TrialFunction(self.V)
+		v=fem.TestFunction(self.V)
 
 		# Choice of metric
 		# H^1 metric with length scale c^2 = 1/10
@@ -227,30 +228,30 @@ class FEMShapeInvariant(object):
 		# L^2
 		mL2 = u*v*dx
 
-		M = PETScMatrix()
-		assemble(m,tensor=M)
-		#M = assemble(m)
-		ML2 = assemble(mL2) 
+		M = fem.PETScMatrix()
+		fem.assemble(m,tensor=M)
+		#M = fem.assemble(m)
+		ML2 = fem.assemble(mL2) 
 		
-		x = Function(self.V)
-		y = Function(self.V)
-		x2 = Function(self.V)
-		y2 = Function(self.V)
+		x = fem.Function(self.V)
+		y = fem.Function(self.V)
+		x2 = fem.Function(self.V)
+		y2 = fem.Function(self.V)
 		
 		if invariants != []:
 			self.invariant_dx.vector()[:] = invariants[:,0]
 			self.invariant_dy.vector()[:] = invariants[:,1]
 
-		solve(M,x2.vector(),self.invariant_dx.vector())
-		solve(M,y2.vector(),self.invariant_dy.vector())
+		fem.solve(M,x2.vector(),self.invariant_dx.vector())
+		fem.solve(M,y2.vector(),self.invariant_dy.vector())
 
 		# H^2 metric
 		x3 = x2*v*dx()
 		y3 = y2*v*dx()
-		M3x = assemble(x3)
-		M3y = assemble(y3)
-		solve(M,x.vector(),M3x)
-		solve(M,y.vector(),M3y)
+		M3x = fem.assemble(x3)
+		M3y = fem.assemble(y3)
+		fem.solve(M,x.vector(),M3x)
+		fem.solve(M,y.vector(),M3y)
 		
 		if show_plot:
 			# Plot the representer
