@@ -7,8 +7,7 @@ This module has been tested with FEniCS version 2018.01
 #import fenics as fem
 import dolfin as fem
 from dolfin import inner, dx, grad
-from numpy import zeros, array, linspace, sin, cos, pi, vstack, hstack, meshgrid, ascontiguousarray
-from mpl_toolkits.mplot3d import Axes3D
+from numpy import zeros, array, linspace, vstack, meshgrid, ascontiguousarray
 from matplotlib import cm
 
 class FEMShapeInvariant(object):
