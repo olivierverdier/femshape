@@ -16,7 +16,7 @@ class FEMShapeInvariant(object):
 	Class for extracting shape invariants using FEM.
 	"""
 
-	def __init__(self, space=None, order=2, meshsize=64,L=1):
+	def __init__(self, space=None, order=2, meshsize=64, L=1):
 		"""
 		Initialize.
 
@@ -33,7 +33,7 @@ class FEMShapeInvariant(object):
 			Size of the mesh underlying the FEM space. Only used if `space` is None.
 		"""
 		super(FEMShapeInvariant, self).__init__()
-		
+
 		self.order = order
 		self.meshsize = meshsize
 		# Initialize FEM space
@@ -55,7 +55,7 @@ class FEMShapeInvariant(object):
 		self.invariant_dy = fem.Function(self.V)
 
 
-	def compute_invariants(self, gamma, closed = True):
+	def compute_invariants(self, gamma, closed=True):
 		"""
 		Compute the FEM invariants associated with the curve `gamma`.
 
@@ -121,9 +121,9 @@ class FEMShapeInvariant(object):
 
 		return invariants
 
-	def matrix_representation(self,size=256):
+	def matrix_representation(self, size=256):
 		"""
-		This function return a matrix representation of the 
+		This function return a matrix representation of the
 		dx and dy invariants thought of a FEniCS functions on
 		the underlying FEM space.
 
@@ -169,9 +169,9 @@ class FEMShapeInvariant(object):
 		# Return the two matrices
 		return (xx,yy)
 
-	def mat_rep(self,x,y,size=256):
+	def mat_rep(self, x, y, size=256):
 		"""
-		This function return a matrix representation of the 
+		This function return a matrix representation of the
 		dx and dy invariants thought of a FEniCS functions on
 		the underlying FEM space.
 
@@ -216,11 +216,11 @@ class FEMShapeInvariant(object):
 		# Return the two matrices
 		return (xx,yy,ux,uy)
 
-	def calcM(self,show_plot=False,ret_inv=False,invariants=[],name=''):
+	def calcM(self, show_plot=False, ret_inv=False, invariants=[], name=''):
 		import matplotlib.pyplot as pl
 		import numpy as np
-		u=fem.TrialFunction(self.V)
-		v=fem.TestFunction(self.V)
+		u = fem.TrialFunction(self.V)
+		v = fem.TestFunction(self.V)
 
 		# Choice of metric
 		# H^1 metric with length scale c^2 = 1/10
@@ -231,13 +231,13 @@ class FEMShapeInvariant(object):
 		M = fem.PETScMatrix()
 		fem.assemble(m,tensor=M)
 		#M = fem.assemble(m)
-		ML2 = fem.assemble(mL2) 
-		
+		ML2 = fem.assemble(mL2)
+
 		x = fem.Function(self.V)
 		y = fem.Function(self.V)
 		x2 = fem.Function(self.V)
 		y2 = fem.Function(self.V)
-		
+
 		if invariants != []:
 			self.invariant_dx.vector()[:] = invariants[:,0]
 			self.invariant_dy.vector()[:] = invariants[:,1]
@@ -252,7 +252,7 @@ class FEMShapeInvariant(object):
 		M3y = fem.assemble(y3)
 		fem.solve(M,x.vector(),M3x)
 		fem.solve(M,y.vector(),M3y)
-		
+
 		if show_plot:
 			# Plot the representer
 			(xrep,yrep,ux,uy) = self.mat_rep(x,y,size=41)
@@ -283,13 +283,10 @@ class FEMShapeInvariant(object):
 		H2 = x.vector().inner(self.invariant_dx.vector())
 		H2 += y.vector().inner(self.invariant_dy.vector())
 
-		# H1 = np.inner(x2.vector().array(),self.invariant_dx.vector().array()) + np.inner(y2.vector().array(),self.invariant_dy.vector().array()) 
-		# H2 = np.inner(x.vector().array(),self.invariant_dx.vector().array()) + np.inner(y.vector().array(),self.invariant_dy.vector().array()) 
+		# H1 = np.inner(x2.vector().array(),self.invariant_dx.vector().array()) + np.inner(y2.vector().array(),self.invariant_dy.vector().array())
+		# H2 = np.inner(x.vector().array(),self.invariant_dx.vector().array()) + np.inner(y.vector().array(),self.invariant_dy.vector().array())
 
 		if ret_inv:
 			return x2.vector()[:], y2.vector()[:], H1, H2, M.array(), self.invariant_dx.vector()[:], self.invariant_dy.vector()[:]
 		else:
 			return x.vector()[:], y.vector()[:], H1, H2
-		
-
-
