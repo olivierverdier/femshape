@@ -216,7 +216,7 @@ class FEMShapeInvariant(object):
 		return (xx,yy,ux,uy)
 
 	def calcM(self,show_plot=False,ret_inv=False,invariants=[],name=''):
-		import pylab as pl
+		import matplotlib.pyplot as pl
 		import numpy as np
 		u=TrialFunction(self.V)
 		v=TestFunction(self.V)
