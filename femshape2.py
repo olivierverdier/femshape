@@ -121,52 +121,8 @@ class FEMShapeInvariant(object):
 		return invariants
 
 	def matrix_representation(self, size=256):
-		"""
-		This function return a matrix representation of the
-		dx and dy invariants thought of a FEniCS functions on
-		the underlying FEM space.
-
-		It is assumed that the mesh streches over [-1,1]x[-1,1].
-		"""
-
-		# Create matrix x and y coordinates
-		#[xx,yy] = meshgrid(linspace(-1,1,size), linspace(-1,1,size))
-		[xx,yy] = meshgrid(linspace(-self.L,self.L,size), linspace(-self.L,self.L,size))
-		coords = zeros((size**2,2), dtype=float)
-		coords[:,0] = xx.reshape(size**2)
-		coords[:,1] = yy.reshape(size**2)
-
-		# Use this array to send into FEniCS.
-		val = array([1.0],dtype=float)
-
-		# Create the dx invariant matrix
-		values = []
-		for c in coords:
-			# Evaluate the FEniCS function `invariant_dx` at the point `c`
-			self.invariant_dx.eval(val, ascontiguousarray(c))
-
-			# Append the computed value in a vector
-			values.append(val[0])
-
-		# Reformat the vector of values
-		values = array(values)
-		xx[:,:] = values.reshape((size,size))
-
-		# Create the dy invariant matrix
-		values = []
-		for c in coords:
-			# Evaluate the FEniCS function `invariant_dy` at the point `c`
-			self.invariant_dy.eval(val, ascontiguousarray(c))
-
-			# Append the computed value in a vector
-			values.append(val[0])
-
-		# Reformat the vector of values
-		values = array(values)
-		yy[:,:] = values.reshape((size,size))
-
-		# Return the two matrices
-		return (xx,yy)
+		(xx,yy,ux,uy) = self.mat_rep(self.invariant_dx, self.invariant_dy)
+		return ux, uy
 
 	def mat_rep(self, x, y, size=256):
 		"""
