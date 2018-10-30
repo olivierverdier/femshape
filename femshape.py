@@ -115,24 +115,22 @@ def compute_invariants(space, gamma, closed=True):
 		invariants[global_dofs,0] += values*(xkp1-xk)
 		invariants[global_dofs,1] += values*(ykp1-yk)
 
-	# Create FEM functions for the invariants
-	invariant_dx = fem.Function(space.V)
-	invariant_dy = fem.Function(space.V)
-	# Store results in FEniCS functions
-	invariant_dx.vector()[:] = invariants[:,0]
-	invariant_dy.vector()[:] = invariants[:,1]
+	return invariants
 
-	return invariant_dx, invariant_dy
 
 
 class CurveInvariant:
 	def __init__(self, space, curve, closed=True):
 		self.space = space
 		self.curve = curve
-		self.invariant_dx, self.invariant_dy = compute_invariants(space, curve)
-
-	def get_as_array(self):
-		return [inv.vector()[:] for inv in [self.invariant_dx, self.invariant_dy]]
+		invariants = compute_invariants(space, curve)
+		self.invariants = invariants
+		# Create FEM functions for the invariants
+		self.invariant_dx = fem.Function(space.V)
+		self.invariant_dy = fem.Function(space.V)
+		# Store results in FEniCS functions
+		self.invariant_dx.vector()[:] = invariants[:,0]
+		self.invariant_dy.vector()[:] = invariants[:,1]
 
 	def matrix_representation(self, size=256):
 		(xx,yy,ux,uy) = self.mat_rep(self.invariant_dx, self.invariant_dy)
