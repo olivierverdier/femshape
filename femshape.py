@@ -12,7 +12,7 @@ from matplotlib import cm
 
 import matplotlib.pyplot as pl
 
-class FEMShapeInvariant(object):
+class Space:
 	"""
 	Class for extracting shape invariants using FEM.
 	"""
@@ -33,8 +33,6 @@ class FEMShapeInvariant(object):
 		meshsize : int
 			Size of the mesh underlying the FEM space. Only used if `space` is None.
 		"""
-		super(FEMShapeInvariant, self).__init__()
-
 		self.order = order
 		self.meshsize = meshsize
 		# Initialize FEM space
@@ -51,76 +49,90 @@ class FEMShapeInvariant(object):
 		self.tree = fem.BoundingBoxTree()
 		self.tree.build(self.mesh)
 
-		# Create FEM functions for the invariants
-		self.invariant_dx = fem.Function(self.V)
-		self.invariant_dy = fem.Function(self.V)
+
+def compute_invariants(space, gamma, closed=True):
+	"""
+	Compute the FEM invariants associated with the curve `gamma`.
+
+	Parameters
+	----------
+	space : FEM space
+	gamma : ndarray, shape (n,2)
+		Shape represented as `n` ordered points in the plane.
+
+	closed : bool
+		Specify if gamma is a closed curve.
+
+	Return
+	------
+	Two functions defined on the given space.
+	"""
+
+	# Check shape of gamma
+	if len(gamma.shape) is not 2:
+		raise AttributeError("gamma has the wrong shape.")
+	elif gamma.shape[1] is not 2 and gamma.shape[0] is not 2:
+		raise AttributeError("gamma should be a sequence of planar points.")
+	elif gamma.shape[1] is not 2:
+		gamma = gamma.T
+
+	space.gamma = gamma
+	# Create output vectors (the invariants)
+	invariants = zeros((space.V.dim(),2),dtype=float, order='F')
+
+	# Extend with one point if gamma is closed
+	if closed:
+		gamma = vstack((gamma,gamma[0]))
+
+	# Loop over points on the curve
+	for (xk,xkp1,yk,ykp1) in zip(gamma[:-1,0],gamma[1:,0],gamma[:-1,1],gamma[1:,1]):
+
+		xmid = (xk+xkp1)/2
+		ymid = (yk+ykp1)/2
+		midpoint = fem.Point(xmid, ymid)
+
+		# Compute which cells in mesh collide with point
+		collisions = space.tree.compute_entity_collisions(midpoint)
+
+		# Skip if midpoint does not collide with any cell
+		if len(collisions) == 0:
+			# print "Skipping point, no collisions found: (%g, %g)" % (p.x(), p.y())
+			continue
+
+		# Pick first cell (may be several)
+		cell_index = collisions[0]
+		cell = fem.Cell(space.mesh, cell_index)
+
+		# Evaluate basis functions associated with the selected cell
+		values = zeros(space.element.space_dimension())
+		vertex_coordinates = cell.get_vertex_coordinates()
+		values = space.element.evaluate_basis_all(array([xmid,ymid]), vertex_coordinates, 0)
+
+		# Find the global basis function indices associated with the selected cell
+		global_dofs = space.V.dofmap().cell_dofs(cell_index)
+
+		# Compute the invariant integrals
+		invariants[global_dofs,0] += values*(xkp1-xk)
+		invariants[global_dofs,1] += values*(ykp1-yk)
+
+	# Create FEM functions for the invariants
+	invariant_dx = fem.Function(space.V)
+	invariant_dy = fem.Function(space.V)
+	# Store results in FEniCS functions
+	invariant_dx.vector()[:] = invariants[:,0]
+	invariant_dy.vector()[:] = invariants[:,1]
+
+	return invariant_dx, invariant_dy
 
 
-	def compute_invariants(self, gamma, closed=True):
-		"""
-		Compute the FEM invariants associated with the curve `gamma`.
+class CurveInvariant:
+	def __init__(self, space, curve, closed=True):
+		self.space = space
+		self.curve = curve
+		self.invariant_dx, self.invariant_dy = compute_invariants(space, curve)
 
-		Parameters
-		----------
-		gamma : ndarray, shape (n,2)
-			Shape represented as `n` ordered points in the plane.
-
-		closed : bool
-			Specify if gamma is a closed curve.
-		"""
-
-		# Check shape of gamma
-		if len(gamma.shape) is not 2:
-			raise AttributeError("gamma has the wrong shape.")
-		elif gamma.shape[1] is not 2 and gamma.shape[0] is not 2:
-			raise AttributeError("gamma should be a sequence of planar points.")
-		elif gamma.shape[1] is not 2:
-			gamma = gamma.T
-
-		self.gamma = gamma
-		# Create output vectors (the invariants)
-		invariants = zeros((self.V.dim(),2),dtype=float, order='F')
-
-		# Extend with one point if gamma is closed
-		if closed:
-			gamma = vstack((gamma,gamma[0]))
-
-		# Loop over points on the curve
-		for (xk,xkp1,yk,ykp1) in zip(gamma[:-1,0],gamma[1:,0],gamma[:-1,1],gamma[1:,1]):
-
-			xmid = (xk+xkp1)/2
-			ymid = (yk+ykp1)/2
-			midpoint = fem.Point(xmid, ymid)
-
-			# Compute which cells in mesh collide with point
-			collisions = self.tree.compute_entity_collisions(midpoint)
-
-			# Skip if midpoint does not collide with any cell
-			if len(collisions) == 0:
-				# print "Skipping point, no collisions found: (%g, %g)" % (p.x(), p.y())
-				continue
-
-			# Pick first cell (may be several)
-			cell_index = collisions[0]
-			cell = fem.Cell(self.mesh, cell_index)
-
-			# Evaluate basis functions associated with the selected cell
-			values = zeros(self.element.space_dimension())
-			vertex_coordinates = cell.get_vertex_coordinates()
-			values = self.element.evaluate_basis_all(array([xmid,ymid]), vertex_coordinates, 0)
-
-			# Find the global basis function indices associated with the selected cell
-			global_dofs = self.V.dofmap().cell_dofs(cell_index)
-
-			# Compute the invariant integrals
-			invariants[global_dofs,0] += values*(xkp1-xk)
-			invariants[global_dofs,1] += values*(ykp1-yk)
-
-		# Store results in FEniCS functions
-		self.invariant_dx.vector()[:] = invariants[:,0]
-		self.invariant_dy.vector()[:] = invariants[:,1]
-
-		return invariants
+	def get_as_array(self):
+		return [inv.vector()[:] for inv in [self.invariant_dx, self.invariant_dy]]
 
 	def matrix_representation(self, size=256):
 		(xx,yy,ux,uy) = self.mat_rep(self.invariant_dx, self.invariant_dy)
@@ -136,7 +148,8 @@ class FEMShapeInvariant(object):
 		"""
 
 		# Create matrix x and y coordinates
-		[xx,yy] = meshgrid(linspace(-self.L,self.L,size), linspace(-self.L,self.L,size))
+		L = self.space.L
+		[xx,yy] = meshgrid(linspace(-L,L,size), linspace(-L,L,size))
 		coords = zeros((size**2,2), dtype=float)
 		coords[:,0] = xx.reshape(size**2)
 		coords[:,1] = yy.reshape(size**2)
@@ -174,8 +187,9 @@ class FEMShapeInvariant(object):
 		return (xx,yy,ux,uy)
 
 	def calcM_(self, scale=1/np.sqrt(10)):
-		u = fem.TrialFunction(self.V)
-		v = fem.TestFunction(self.V)
+		V = self.space.V
+		u = fem.TrialFunction(V)
+		v = fem.TestFunction(V)
 
 		# Choice of metric
 		# H^1 metric with length scale c^2 = 1/10
@@ -188,10 +202,10 @@ class FEMShapeInvariant(object):
 		#M = fem.assemble(m)
 		ML2 = fem.assemble(mL2)
 
-		x = fem.Function(self.V)
-		y = fem.Function(self.V)
-		x2 = fem.Function(self.V)
-		y2 = fem.Function(self.V)
+		x = fem.Function(V)
+		y = fem.Function(V)
+		x2 = fem.Function(V)
+		y2 = fem.Function(V)
 
 		fem.solve(M,x2.vector(),self.invariant_dx.vector())
 		fem.solve(M,y2.vector(),self.invariant_dy.vector())
@@ -232,7 +246,7 @@ class FEMShapeInvariant(object):
 		pl.axis('equal')
 		pl.colorbar()
 		if name is not None:
-			name = name+str(self.order)+'_'+str(self.meshsize)+'rep.pdf'
+			name = name+str(self.space.order)+'_'+str(self.space.meshsize)+'rep.pdf'
 			pl.savefig(name,dpi=600)
 
 
