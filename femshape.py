@@ -217,11 +217,11 @@ class FEMShapeInvariant(object):
 		# H1 = np.inner(x2.vector().array(),self.invariant_dx.vector().array()) + np.inner(y2.vector().array(),self.invariant_dy.vector().array())
 		# H2 = np.inner(x.vector().array(),self.invariant_dx.vector().array()) + np.inner(y.vector().array(),self.invariant_dy.vector().array())
 
-		return x2, y2, H1, H2, self.invariant_dx, self.invariant_dy, x, y
+		return x2, y2, H1, H2, M, self.invariant_dx, self.invariant_dy, x, y
 
 
 	def calcM(self, ret_inv=False):
-		x2, y2, H1, H2, dx, dy, x, y = self.calcM_()
+		x2, y2, H1, H2, M, dx, dy, x, y = self.calcM_()
 		if ret_inv:
 			return x2.vector()[:], y2.vector()[:], H1, H2, M.array(), self.invariant_dx.vector()[:], self.invariant_dy.vector()[:]
 		else:
