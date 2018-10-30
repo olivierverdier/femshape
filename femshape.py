@@ -9,8 +9,11 @@ from mpl_toolkits.mplot3d import Axes3D
 
 import dolfin as fem
 from dolfin import inner, dx, grad
+import numpy as np
 from numpy import zeros, array, linspace, vstack, meshgrid, ascontiguousarray
 from matplotlib import cm
+
+import matplotlib.pyplot as pl
 
 class FEMShapeInvariant(object):
 	"""
@@ -173,9 +176,7 @@ class FEMShapeInvariant(object):
 		# Return the two matrices
 		return (xx,yy,ux,uy)
 
-	def calcM(self, show_plot=False, ret_inv=False, invariants=[], name=''):
-		import matplotlib.pyplot as pl
-		import numpy as np
+	def calcM(self, ret_inv=False, invariants=[]):
 		u = fem.TrialFunction(self.V)
 		v = fem.TestFunction(self.V)
 
@@ -210,29 +211,6 @@ class FEMShapeInvariant(object):
 		fem.solve(M,x.vector(),M3x)
 		fem.solve(M,y.vector(),M3y)
 
-		if show_plot:
-			# Plot the representer
-			(xrep,yrep,ux,uy) = self.mat_rep(x,y,size=41)
-
-			pl.figure()
-			pl.quiver(xrep,yrep,ux,uy)
-			pl.plot(self.gamma[:,0],self.gamma[:,1],linewidth=4)
-			pl.axis('tight')
-			pl.axis('equal')
-			if name!='':
-				name = name+str(self.order)+'_'+str(self.meshsize)+'rep.pdf'
-				pl.savefig(name,dpi=600)
-
-			fig = pl.figure()
-			ax = fig.gca(projection='3d')
-			surf = ax.plot_surface(xrep,yrep,np.sqrt(ux**2+uy**2), rstride=1, cstride=1, cmap=cm.coolwarm,linewidth=0, antialiased=False)
-			pl.title('Order '+str(self.order)+' Meshsize '+str(self.meshsize))
-			if name!='':
-				name = name+str(self.order)+'_'+str(self.meshsize)+'rep3.pdf'
-				pl.savefig(name,dpi=600)
-
-			#pl.figure()
-			#plot(self.mesh)
 
 		# Print the norm
 		H1 = x2.vector().inner(self.invariant_dx.vector())
@@ -247,3 +225,27 @@ class FEMShapeInvariant(object):
 			return x2.vector()[:], y2.vector()[:], H1, H2, M.array(), self.invariant_dx.vector()[:], self.invariant_dy.vector()[:]
 		else:
 			return x.vector()[:], y.vector()[:], H1, H2
+
+	def plot_representer(self, xrep, yrep, ux, uy, gamma, name=None):
+		pl.figure()
+		pl.quiver(xrep,yrep,ux,uy)
+		pl.plot(gamma[:,0],gamma[:,1],linewidth=4)
+		pl.axis('tight')
+		pl.axis('equal')
+		if name is not None:
+			name = name+str(self.order)+'_'+str(self.meshsize)+'rep.pdf'
+			pl.savefig(name,dpi=600)
+
+
+		#pl.figure()
+		#plot(self.mesh)
+
+
+	def plot_rep_surface(self, xrep, yrep, ux, uy, name=None):
+		fig = pl.figure()
+		ax = fig.gca(projection='3d')
+		surf = ax.plot_surface(xrep,yrep,np.sqrt(ux**2+uy**2), rstride=1, cstride=1, cmap=cm.coolwarm,linewidth=0, antialiased=False)
+		pl.title('Order '+str(self.order)+' Meshsize '+str(self.meshsize))
+		if name is not None:
+			name = name+str(self.order)+'_'+str(self.meshsize)+'rep3.pdf'
+			pl.savefig(name,dpi=600)
