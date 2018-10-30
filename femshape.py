@@ -49,7 +49,7 @@ class Space:
 		self.tree.build(self.mesh)
 
 
-def compute_invariants(space, gamma, closed=True):
+def compute_invariants(space, gamma):
 	"""
 	Compute the FEM invariants associated with the curve `gamma`.
 
@@ -78,10 +78,6 @@ def compute_invariants(space, gamma, closed=True):
 	space.gamma = gamma
 	# Create output vectors (the invariants)
 	invariants = zeros((space.V.dim(),2),dtype=float, order='F')
-
-	# Extend with one point if gamma is closed
-	if closed:
-		gamma = vstack((gamma,gamma[0]))
 
 	# Loop over points on the curve
 	for (xk,xkp1,yk,ykp1) in zip(gamma[:-1,0],gamma[1:,0],gamma[:-1,1],gamma[1:,1]):
@@ -121,6 +117,9 @@ def compute_invariants(space, gamma, closed=True):
 class CurveInvariant:
 	def __init__(self, space, curve, closed=True):
 		self.space = space
+		# Extend with one point if gamma is closed
+		if closed:
+			curve = vstack((curve, curve[0]))
 		self.curve = curve
 		invariants = compute_invariants(space, curve)
 		self.invariants = invariants
