@@ -4,9 +4,6 @@ Module for computing shape invariants of planar curves using FEniCS.
 This module has been tested with FEniCS version 2018.01
 """
 
-# the following import is is necessary for the 3D plot to work
-from mpl_toolkits.mplot3d import Axes3D
-
 import dolfin as fem
 from dolfin import inner, dx, grad
 import numpy as np
@@ -228,11 +225,12 @@ class FEMShapeInvariant(object):
 			return x.vector()[:], y.vector()[:], H1, H2
 
 	def plot_representer(self, xrep, yrep, ux, uy, gamma, name=None):
-		pl.figure()
-		pl.quiver(xrep,yrep,ux,uy)
+		lengths = np.sqrt(np.square(ux) + np.square(uy))
+		pl.quiver(xrep,yrep,ux,uy, lengths)
 		pl.plot(gamma[:,0],gamma[:,1],linewidth=4)
 		pl.axis('tight')
 		pl.axis('equal')
+		pl.colorbar()
 		if name is not None:
 			name = name+str(self.order)+'_'+str(self.meshsize)+'rep.pdf'
 			pl.savefig(name,dpi=600)
@@ -241,12 +239,3 @@ class FEMShapeInvariant(object):
 		#pl.figure()
 		#plot(self.mesh)
 
-
-	def plot_rep_surface(self, xrep, yrep, ux, uy, name=None):
-		fig = pl.figure()
-		ax = fig.gca(projection='3d')
-		surf = ax.plot_surface(xrep,yrep,np.sqrt(ux**2+uy**2), rstride=1, cstride=1, cmap=cm.coolwarm,linewidth=0, antialiased=False)
-		pl.title('Order '+str(self.order)+' Meshsize '+str(self.meshsize))
-		if name is not None:
-			name = name+str(self.order)+'_'+str(self.meshsize)+'rep3.pdf'
-			pl.savefig(name,dpi=600)
