@@ -176,13 +176,13 @@ class FEMShapeInvariant(object):
 		# Return the two matrices
 		return (xx,yy,ux,uy)
 
-	def calcM_(self, invariants=[]):
+	def calcM_(self, invariants=[], scale=1/np.sqrt(10)):
 		u = fem.TrialFunction(self.V)
 		v = fem.TestFunction(self.V)
 
 		# Choice of metric
 		# H^1 metric with length scale c^2 = 1/10
-		m = 1./10*inner(grad(u),grad(v))*dx() + u*v*dx()
+		m = scale**2*inner(grad(u),grad(v))*dx() + u*v*dx()
 		# L^2
 		mL2 = u*v*dx
 
