@@ -8,7 +8,6 @@ import dolfin as fem
 from dolfin import inner, dx, grad
 import numpy as np
 from numpy import zeros, array, linspace, vstack, meshgrid, ascontiguousarray
-from matplotlib import cm
 
 import matplotlib.pyplot as pl
 
