@@ -4,7 +4,9 @@ Module for computing shape invariants of planar curves using FEniCS.
 This module has been tested with FEniCS version 2018.01
 """
 
-#import fenics as fem
+# the following import is is necessary for the 3D plot to work
+from mpl_toolkits.mplot3d import Axes3D
+
 import dolfin as fem
 from dolfin import inner, dx, grad
 from numpy import zeros, array, linspace, vstack, meshgrid, ascontiguousarray
