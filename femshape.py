@@ -176,7 +176,7 @@ class FEMShapeInvariant(object):
 		# Return the two matrices
 		return (xx,yy,ux,uy)
 
-	def calcM_(self, invariants=[], scale=1/np.sqrt(10)):
+	def calcM_(self, scale=1/np.sqrt(10)):
 		u = fem.TrialFunction(self.V)
 		v = fem.TestFunction(self.V)
 
@@ -195,10 +195,6 @@ class FEMShapeInvariant(object):
 		y = fem.Function(self.V)
 		x2 = fem.Function(self.V)
 		y2 = fem.Function(self.V)
-
-		if invariants != []:
-			self.invariant_dx.vector()[:] = invariants[:,0]
-			self.invariant_dy.vector()[:] = invariants[:,1]
 
 		fem.solve(M,x2.vector(),self.invariant_dx.vector())
 		fem.solve(M,y2.vector(),self.invariant_dy.vector())
@@ -224,8 +220,8 @@ class FEMShapeInvariant(object):
 		return x2, y2, H1, H2, self.invariant_dx, self.invariant_dy, x, y
 
 
-		def calcM(self, ret_inv=False, invariants=[]):
-			x2, y2, H1, H2, dx, dy, x, y = self.calcM_(invariants)
+	def calcM(self, ret_inv=False):
+		x2, y2, H1, H2, dx, dy, x, y = self.calcM_()
 		if ret_inv:
 			return x2.vector()[:], y2.vector()[:], H1, H2, M.array(), self.invariant_dx.vector()[:], self.invariant_dy.vector()[:]
 		else:
