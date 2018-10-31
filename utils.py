@@ -1,7 +1,7 @@
 import numpy as np
 
 # Generate random Fourier shapes
-def randshapes(ncurves,npoints):
+def randshapes(ncurves, npoints, deviation=1):
 	x = np.zeros((ncurves,npoints))
 	y = np.zeros((ncurves,npoints))
 	t = np.arange(0,2*np.pi,2*np.pi/npoints)
@@ -11,7 +11,7 @@ def randshapes(ncurves,npoints):
 	fr = fr*np.ones((1,np.shape(fr)[0]))
 
 	for shape in range(ncurves):
-		a = (np.random.randn(2*nfourier+1) + 1j*np.random.randn(2*nfourier+1))
+		a = (np.random.randn(2*nfourier+1) + 1j*np.random.randn(2*nfourier+1))*deviation
 		a = a*np.ones((1,np.shape(a)[0]))
 		a = a/(1+np.abs(fr)**3)
 
