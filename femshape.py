@@ -180,29 +180,37 @@ class Current:
 		self.invariant_dx.vector()[:] = invariants[:,0]
 		self.invariant_dy.vector()[:] = invariants[:,1]
 
-	def calcM_(self, scale=1/np.sqrt(10)):
-		V = self.space.V
+class Representer:
+	def __init__(self, current, scale=1/np.sqrt(10)):
+		self.current = current
+		self.scale = scale
+		self.compute_representers()
+
+	def compute_representers(self):
+		V = self.current.space.V
 		u = fem.TrialFunction(V)
 		v = fem.TestFunction(V)
 
 		# Choice of metric
 		# H^1 metric with length scale c^2 = 1/10
-		m = scale**2*inner(grad(u),grad(v))*dx() + u*v*dx()
+		m = self.scale**2*inner(grad(u),grad(v))*dx() + u*v*dx()
 		# L^2
-		mL2 = u*v*dx
+		# mL2 = u*v*dx
 
 		M = fem.PETScMatrix()
 		fem.assemble(m,tensor=M)
 		#M = fem.assemble(m)
-		ML2 = fem.assemble(mL2)
+		# ML2 = fem.assemble(mL2)
 
 		x = fem.Function(V)
 		y = fem.Function(V)
 		x2 = fem.Function(V)
 		y2 = fem.Function(V)
 
-		fem.solve(M,x2.vector(),self.invariant_dx.vector())
-		fem.solve(M,y2.vector(),self.invariant_dy.vector())
+		invariant_dx, invariant_dy = self.current.invariant_dx, self.current.invariant_dy
+
+		fem.solve(M,x2.vector(), invariant_dx.vector())
+		fem.solve(M,y2.vector(), invariant_dy.vector())
 
 		# H^2 metric
 		x3 = x2*v*dx()
@@ -213,34 +221,33 @@ class Current:
 		fem.solve(M,y.vector(),M3y)
 
 
-		# Print the norm
-		H1 = x2.vector().inner(self.invariant_dx.vector())
-		H1 += y2.vector().inner(self.invariant_dy.vector())
-		H2 = x.vector().inner(self.invariant_dx.vector())
-		H2 += y.vector().inner(self.invariant_dy.vector())
+		# Compute the norm
+		H1 = x2.vector().inner(invariant_dx.vector())
+		H1 += y2.vector().inner(invariant_dy.vector())
+		H2 = x.vector().inner(invariant_dx.vector())
+		H2 += y.vector().inner(invariant_dy.vector())
 
 		# H1 = np.inner(x2.vector().array(),self.invariant_dx.vector().array()) + np.inner(y2.vector().array(),self.invariant_dy.vector().array())
 		# H2 = np.inner(x.vector().array(),self.invariant_dx.vector().array()) + np.inner(y.vector().array(),self.invariant_dy.vector().array())
 
-		return x2, y2, H1, H2, M, self.invariant_dx, self.invariant_dy, x, y
-
-	def calcM(self, ret_inv=False):
-		x2, y2, H1, H2, M, dx, dy, x, y = self.calcM_()
-		if ret_inv:
-			return x2.vector()[:], y2.vector()[:], H1, H2, M.array(), self.invariant_dx.vector()[:], self.invariant_dy.vector()[:]
-		else:
-			return x.vector()[:], y.vector()[:], H1, H2
+		self.H1x = x2
+		self.H1y = y2
+		self.H1 = H1
+		self.H2x = x
+		self.H2y = y
+		self.H2 = H2
+		self.M = M
 
 	def plot_representer(self, x, y, size=64, name=None):
-		xrep, yrep, ux, uy = self.space.grid_evaluation(x, y, size=size)
+		xrep, yrep, ux, uy = self.current.space.grid_evaluation(x, y, size=size)
 		lengths = np.sqrt(np.square(ux) + np.square(uy))
 		pl.quiver(xrep,yrep,ux,uy, lengths)
-		pl.plot(self.curve[:,0],self.curve[:,1],linewidth=4, alpha=.5)
+		pl.plot(self.current.curve[:,0],self.current.curve[:,1],linewidth=4, alpha=.5)
 		pl.axis('tight')
 		pl.axis('equal')
 		pl.colorbar()
 		if name is not None:
-			name = name+str(self.space.order)+'_'+str(self.space.meshsize)+'rep.pdf'
+			name = name+str(self.current.space.order)+'_'+str(self.current.space.meshsize)+'rep.pdf'
 			pl.savefig(name,dpi=600)
 
 
