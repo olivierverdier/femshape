@@ -162,6 +162,9 @@ def compute_invariants(space, gamma):
 
 
 class Current:
+	"""
+	Compute the discrete invariants associated to a curve, regarded as a current.
+	"""
 	def __init__(self, space, curve, closed=True):
 		self.space = space
 		# Extend with one point if gamma is closed
