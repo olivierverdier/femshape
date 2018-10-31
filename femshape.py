@@ -161,7 +161,7 @@ def compute_invariants(space, gamma):
 	return invariants
 
 
-class CurveInvariant:
+class Current:
 	def __init__(self, space, curve, closed=True):
 		self.space = space
 		# Extend with one point if gamma is closed
@@ -232,7 +232,7 @@ class CurveInvariant:
 		xrep, yrep, ux, uy = self.space.grid_evaluation(x, y, size=size)
 		lengths = np.sqrt(np.square(ux) + np.square(uy))
 		pl.quiver(xrep,yrep,ux,uy, lengths)
-		pl.plot(self.curve[:,0],self.curve[:,1],linewidth=4)
+		pl.plot(self.curve[:,0],self.curve[:,1],linewidth=4, alpha=.5)
 		pl.axis('tight')
 		pl.axis('equal')
 		pl.colorbar()
