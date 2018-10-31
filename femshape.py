@@ -230,12 +230,10 @@ class Representer:
 		# H1 = np.inner(x2.vector().array(),self.invariant_dx.vector().array()) + np.inner(y2.vector().array(),self.invariant_dy.vector().array())
 		# H2 = np.inner(x.vector().array(),self.invariant_dx.vector().array()) + np.inner(y.vector().array(),self.invariant_dy.vector().array())
 
-		self.H1x = x2
-		self.H1y = y2
-		self.H1 = H1
-		self.H2x = x
-		self.H2y = y
-		self.H2 = H2
+		self.H1 = x2, y2
+		self.H1_sq_norm = H1
+		self.H2 = x, y
+		self.H2_sq_norm = H2
 		self.M = M
 
 	def plot_representer(self, x, y, size=64, name=None):
