@@ -48,6 +48,54 @@ class Space:
 		self.tree = fem.BoundingBoxTree()
 		self.tree.build(self.mesh)
 
+	def grid_evaluation(self, x, y, size=256):
+		"""
+		Evaluates the FEniCS functions x and y on a grid of given size.
+
+		Return
+		------
+		The grid points, and the corresponding function evaluations.
+		"""
+
+		# Create matrix x and y coordinates
+		L = self.L
+		[xx,yy] = meshgrid(linspace(-L,L,size), linspace(-L,L,size))
+		coords = zeros((size**2,2), dtype=float)
+		coords[:,0] = xx.reshape(size**2)
+		coords[:,1] = yy.reshape(size**2)
+
+		# Use this array to send into FEniCS.
+		val = array([1.0],dtype=float)
+
+		# Create the dx invariant matrix
+		values = []
+		for c in coords:
+			# Evaluate the FEniCS function `invariant_dx` at the point `c`
+			x.eval(val, ascontiguousarray(c))
+
+			# Append the computed value in a vector
+			values.append(val[0])
+
+		# Reformat the vector of values
+		values = array(values)
+		ux = values.reshape((size,size))
+
+		# Create the dy invariant matrix
+		values = []
+		for c in coords:
+			# Evaluate the FEniCS function `invariant_dy` at the point `c`
+			y.eval(val, ascontiguousarray(c))
+
+			# Append the computed value in a vector
+			values.append(val[0])
+
+		# Reformat the vector of values
+		values = array(values)
+		uy = values.reshape((size,size))
+
+		# Return the two matrices
+		return (xx,yy,ux,uy)
+
 
 def compute_invariants(space, gamma):
 	"""
@@ -113,7 +161,6 @@ def compute_invariants(space, gamma):
 	return invariants
 
 
-
 class CurveInvariant:
 	def __init__(self, space, curve, closed=True):
 		self.space = space
@@ -129,58 +176,6 @@ class CurveInvariant:
 		# Store results in FEniCS functions
 		self.invariant_dx.vector()[:] = invariants[:,0]
 		self.invariant_dy.vector()[:] = invariants[:,1]
-
-	def matrix_representation(self, size=256):
-		(xx,yy,ux,uy) = self.mat_rep(self.invariant_dx, self.invariant_dy)
-		return ux, uy
-
-	def mat_rep(self, x, y, size=256):
-		"""
-		This function return a matrix representation of the
-		dx and dy invariants thought of a FEniCS functions on
-		the underlying FEM space.
-
-		It is assumed that the mesh streches over [-1,1]x[-1,1].
-		"""
-
-		# Create matrix x and y coordinates
-		L = self.space.L
-		[xx,yy] = meshgrid(linspace(-L,L,size), linspace(-L,L,size))
-		coords = zeros((size**2,2), dtype=float)
-		coords[:,0] = xx.reshape(size**2)
-		coords[:,1] = yy.reshape(size**2)
-
-		# Use this array to send into FEniCS.
-		val = array([1.0],dtype=float)
-
-		# Create the dx invariant matrix
-		values = []
-		for c in coords:
-			# Evaluate the FEniCS function `invariant_dx` at the point `c`
-			x.eval(val, ascontiguousarray(c))
-
-			# Append the computed value in a vector
-			values.append(val[0])
-
-		# Reformat the vector of values
-		values = array(values)
-		ux = values.reshape((size,size))
-
-		# Create the dy invariant matrix
-		values = []
-		for c in coords:
-			# Evaluate the FEniCS function `invariant_dy` at the point `c`
-			y.eval(val, ascontiguousarray(c))
-
-			# Append the computed value in a vector
-			values.append(val[0])
-
-		# Reformat the vector of values
-		values = array(values)
-		uy = values.reshape((size,size))
-
-		# Return the two matrices
-		return (xx,yy,ux,uy)
 
 	def calcM_(self, scale=1/np.sqrt(10)):
 		V = self.space.V
@@ -226,7 +221,6 @@ class CurveInvariant:
 
 		return x2, y2, H1, H2, M, self.invariant_dx, self.invariant_dy, x, y
 
-
 	def calcM(self, ret_inv=False):
 		x2, y2, H1, H2, M, dx, dy, x, y = self.calcM_()
 		if ret_inv:
@@ -235,7 +229,7 @@ class CurveInvariant:
 			return x.vector()[:], y.vector()[:], H1, H2
 
 	def plot_representer(self, x, y, size=64, name=None):
-		xrep, yrep, ux, uy = self.mat_rep(x, y, size=size)
+		xrep, yrep, ux, uy = self.space.grid_evaluation(x, y, size=size)
 		lengths = np.sqrt(np.square(ux) + np.square(uy))
 		pl.quiver(xrep,yrep,ux,uy, lengths)
 		pl.plot(self.curve[:,0],self.curve[:,1],linewidth=4)
