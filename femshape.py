@@ -234,10 +234,11 @@ class CurveInvariant:
 		else:
 			return x.vector()[:], y.vector()[:], H1, H2
 
-	def plot_representer(self, xrep, yrep, ux, uy, gamma, name=None):
+	def plot_representer(self, x, y, size=64, name=None):
+		xrep, yrep, ux, uy = self.mat_rep(x, y, size=size)
 		lengths = np.sqrt(np.square(ux) + np.square(uy))
 		pl.quiver(xrep,yrep,ux,uy, lengths)
-		pl.plot(gamma[:,0],gamma[:,1],linewidth=4)
+		pl.plot(self.curve[:,0],self.curve[:,1],linewidth=4)
 		pl.axis('tight')
 		pl.axis('equal')
 		pl.colorbar()
