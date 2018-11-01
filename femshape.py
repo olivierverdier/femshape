@@ -263,3 +263,17 @@ def plot_representer(representer, order=2, size=32):
 	pl.axis('tight')
 	plt.axis('equal')
 	plt.colorbar()
+
+def plot_invariants(current, threshold=1e-3):
+	"""
+	Plot the invariants of a current as follows.
+	Each invariant is a pair $x_i:= ∫γ^* (φ_i dx), yi := ∫γ^* (φ_i dy)$
+	We plot the points of coordinates $(x_i, y_i)$.
+	Each non-zero point roughly corresponds to a gradient of the curve at the location
+	of the basis function $φ_i$.
+	"""
+	inv_lengths = np.sqrt(np.sum(np.square(current.invariants), axis=1))
+	mask = inv_lengths > threshold
+	invs = current.invariants[mask]
+	plt.plot(invs[:,0], invs[:,1],'.',alpha=.2)
+	plt.axis('equal')
