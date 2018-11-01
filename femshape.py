@@ -260,7 +260,7 @@ def plot_representer(representer, order=2, size=32):
 	line_width_function = (lengths/max_length)**2*4
 	plt.streamplot(xx, yy, ux, uy, color=lengths, linewidth=line_width_function, arrowstyle='->', density=1.2)
 	plt.plot(representer.current.curve[:,0], representer.current.curve[:,1], linewidth=5, alpha=.5, color='k')
-	pl.axis('tight')
+	plt.axis('tight')
 	plt.axis('equal')
 	plt.colorbar()
 
