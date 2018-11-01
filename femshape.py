@@ -11,7 +11,7 @@ from numpy import zeros, array, linspace, vstack, meshgrid, ascontiguousarray
 
 class Space:
 	"""
-	Class for extracting shape invariants using FEM.
+	Finite element discretisation.
 	"""
 
 	def __init__(self, space=None, order=2, meshsize=64, L=1):
