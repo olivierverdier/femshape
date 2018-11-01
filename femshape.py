@@ -9,8 +9,6 @@ from dolfin import inner, dx, grad
 import numpy as np
 from numpy import zeros, array, linspace, vstack, meshgrid, ascontiguousarray
 
-import matplotlib.pyplot as pl
-
 class Space:
 	"""
 	Class for extracting shape invariants using FEM.
@@ -236,28 +234,32 @@ class Representer:
 		self.H2_sq_norm = H2
 		self.M = M
 
-	def plot(self, order=2, size=64, name=None):
-		"""
-		Plot the shape and its representer.
-		"""
-		if order == 1:
-			x, y = self.H1
-		elif order ==2:
-			x, y = self.H2
-		else:
-			raise ValueError()
-		xrep, yrep, ux, uy = self.current.space.grid_evaluation(x, y, size=size)
-		lengths = np.sqrt(np.square(ux) + np.square(uy))
-		pl.quiver(xrep,yrep,ux,uy, lengths)
-		pl.plot(self.current.curve[:,0],self.current.curve[:,1],linewidth=4, alpha=.5)
-		pl.axis('tight')
-		pl.axis('equal')
-		pl.colorbar()
-		if name is not None:
-			name = name+str(self.current.space.order)+'_'+str(self.current.space.meshsize)+'rep.pdf'
-			pl.savefig(name,dpi=600)
+	def square_distance(self, rep):
+		rdiffx = rep.H2x.vector() - self.H2x.vector()
+		rdiffy = rep.H2y.vector() - self.H2y.vector()
+		diffx = rep.current.invariant_dx.vector() - self.current.invariant_dx.vector()
+		diffy = rep.current.invariant_dy.vector() - self.current.invariant_dy.vector()
+		return rdiffx.inner(diffx) + rdiffy.inner(diffy)
 
 
-		#pl.figure()
-		#plot(self.mesh)
+import matplotlib.pyplot as plt
 
+def plot_representer(representer, order=2, size=32):
+	"""
+	Plot the H1 or H2 representer of a given current.
+	"""
+	if order == 2:
+		x,y = representer.H2
+	else:
+		x,y = representer.H1
+	xx, yy, ux, uy = representer.current.space.grid_evaluation(x, y, size=size)
+	lengths = np.sqrt(np.square(ux) + np.square(uy))
+	plt.pcolormesh(xx, yy, lengths, alpha=.2)
+	#plt.quiver(xx, yy, ux, uy, lengths, alpha=.3)
+	max_length = np.max(lengths)
+	line_width_function = (lengths/max_length)**2*4
+	plt.streamplot(xx, yy, ux, uy, color=lengths, linewidth=line_width_function, arrowstyle='->', density=1.2)
+	plt.plot(representer.current.curve[:,0], representer.current.curve[:,1], linewidth=5, alpha=.5, color='k')
+	pl.axis('tight')
+	plt.axis('equal')
+	plt.colorbar()
