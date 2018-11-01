@@ -178,13 +178,41 @@ class Current:
 		self.invariant_dx.vector()[:] = invariants[:,0]
 		self.invariant_dy.vector()[:] = invariants[:,1]
 
+def compute_representers(V, inertia, rhs):
+	"""
+	Auxilliary function to solve the equations
+	M u = f
+	and
+	(M w, v) = (u, v) forall v
+	where f is the right hand side (rhs), and M is the inertia.
+	One also computes (u, f) and (w, v)
+	"""
+	M = inertia
+
+	x = fem.Function(V)
+	x2 = fem.Function(V)
+
+	fem.solve(M, x2.vector(), rhs.vector())
+
+	# H^2 metric
+	v = fem.TestFunction(V)
+	x3 = x2*v*dx()
+	M3x = fem.assemble(x3)
+	fem.solve(M,x.vector(),M3x)
+
+
+	# Compute the norm
+	H1 = x2.vector().inner(rhs.vector())
+	H2 = x.vector().inner(rhs.vector())
+
+	return x2, x, H1, H2
+
+
 class Representer:
 	def __init__(self, current, scale=1/np.sqrt(10)):
 		self.current = current
 		self.scale = scale
-		self.compute_representers()
 
-	def compute_representers(self):
 		V = self.current.space.V
 		u = fem.TrialFunction(V)
 		v = fem.TestFunction(V)
@@ -197,42 +225,17 @@ class Representer:
 
 		M = fem.PETScMatrix()
 		fem.assemble(m,tensor=M)
+		self.inertia = M
 		#M = fem.assemble(m)
 		# ML2 = fem.assemble(mL2)
 
-		x = fem.Function(V)
-		y = fem.Function(V)
-		x2 = fem.Function(V)
-		y2 = fem.Function(V)
-
-		invariant_dx, invariant_dy = self.current.invariant_dx, self.current.invariant_dy
-
-		fem.solve(M,x2.vector(), invariant_dx.vector())
-		fem.solve(M,y2.vector(), invariant_dy.vector())
-
-		# H^2 metric
-		x3 = x2*v*dx()
-		y3 = y2*v*dx()
-		M3x = fem.assemble(x3)
-		M3y = fem.assemble(y3)
-		fem.solve(M,x.vector(),M3x)
-		fem.solve(M,y.vector(),M3y)
-
-
-		# Compute the norm
-		H1 = x2.vector().inner(invariant_dx.vector())
-		H1 += y2.vector().inner(invariant_dy.vector())
-		H2 = x.vector().inner(invariant_dx.vector())
-		H2 += y.vector().inner(invariant_dy.vector())
-
-		# H1 = np.inner(x2.vector().array(),self.invariant_dx.vector().array()) + np.inner(y2.vector().array(),self.invariant_dy.vector().array())
-		# H2 = np.inner(x.vector().array(),self.invariant_dx.vector().array()) + np.inner(y.vector().array(),self.invariant_dy.vector().array())
-
-		self.H1 = x2, y2
-		self.H1_sq_norm = H1
-		self.H2 = x, y
-		self.H2_sq_norm = H2
-		self.M = M
+		x1, x2, H1x, H2x = compute_representers(V, self.inertia, self.current.invariant_dx)
+		y1, y2, H1y, H2y = compute_representers(V, self.inertia, self.current.invariant_dy)
+		self.H1 = x1, y1
+		self.H2 = x2, y2
+		self.H1_sq_norm = H1x + H1y
+		self.H2_sq_norm = H2x + H2y
+		# self.compute_representers(V, )
 
 	def square_distance(self, rep):
 		rdiffx = rep.H2x.vector() - self.H2x.vector()
