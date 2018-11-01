@@ -236,7 +236,16 @@ class Representer:
 		self.H2_sq_norm = H2
 		self.M = M
 
-	def plot_representer(self, x, y, size=64, name=None):
+	def plot(self, order=2, size=64, name=None):
+		"""
+		Plot the shape and its representer.
+		"""
+		if order == 1:
+			x, y = self.H1
+		elif order ==2:
+			x, y = self.H2
+		else:
+			raise ValueError()
 		xrep, yrep, ux, uy = self.current.space.grid_evaluation(x, y, size=size)
 		lengths = np.sqrt(np.square(ux) + np.square(uy))
 		pl.quiver(xrep,yrep,ux,uy, lengths)
