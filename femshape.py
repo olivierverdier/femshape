@@ -241,13 +241,16 @@ def plot_representer(representer, order=2, size=32):
 	else:
 		x,y = representer.H1
 	xx, yy, ux, uy = representer.current.space.grid_evaluation(x, y, size=size)
+	plot_stream(xx, yy, ux, uy, representer.current.curve)
+
+def plot_stream(xx, yy, ux, uy, curve):
 	lengths = np.sqrt(np.square(ux) + np.square(uy))
 	plt.pcolormesh(xx, yy, lengths, alpha=.2)
 	#plt.quiver(xx, yy, ux, uy, lengths, alpha=.3)
 	max_length = np.max(lengths)
 	line_width_function = (lengths/max_length)**2*4
 	plt.streamplot(xx, yy, ux, uy, color=lengths, linewidth=line_width_function, arrowstyle='->', density=1.2)
-	plt.plot(representer.current.curve[:,0], representer.current.curve[:,1], linewidth=5, alpha=.5, color='k')
+	plt.plot(curve[:,0], curve[:,1], linewidth=5, alpha=.5, color='k')
 	plt.axis('tight')
 	plt.axis('equal')
 	plt.colorbar()
