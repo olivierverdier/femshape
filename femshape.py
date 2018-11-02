@@ -100,11 +100,11 @@ def compute_invariants(space, gamma):
 	"""
 
 	# Check shape of gamma
-	if len(gamma.shape) is not 2:
+	if len(gamma.shape) != 2:
 		raise AttributeError("gamma has the wrong shape.")
-	elif gamma.shape[1] is not 2 and gamma.shape[0] is not 2:
+	elif gamma.shape[1] != 2 and gamma.shape[0] != 2:
 		raise AttributeError("gamma should be a sequence of planar points.")
-	elif gamma.shape[1] is not 2:
+	elif gamma.shape[1] != 2:
 		gamma = gamma.T
 
 	space.gamma = gamma
