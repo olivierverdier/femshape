@@ -232,6 +232,13 @@ class Representer:
 		self.H2_sq_norm = H2x + H2y
 		# self.compute_representers(V, )
 
+	def get(self, order=2):
+		if order == 2:
+			x, y = self.H2
+		else:
+			x, y = self.H1
+		return [z.vector()[:] for z in [x,y]]
+
 	def __repr__(self):
 		return "{}(current={},\n\tscale={})".format(type(self).__name__, self.current, self.scale)
 
