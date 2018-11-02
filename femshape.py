@@ -107,7 +107,6 @@ def compute_invariants(space, gamma):
 	elif gamma.shape[1] != 2:
 		gamma = gamma.T
 
-	space.gamma = gamma
 	# Create output vectors (the invariants)
 	invariants = zeros((space.V.dim(),2),dtype=float, order='F')
 
