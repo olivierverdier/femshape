@@ -9,6 +9,25 @@ from dolfin import inner, dx, grad
 import numpy as np
 from numpy import zeros, array, linspace, vstack, meshgrid, ascontiguousarray
 
+def batch_eval(f, pts):
+	"""
+	Evaluate a FEniCS function on points.
+	The points should be an array of shape (2,N,M)
+	"""
+
+	# Use this array to send into FEniCS.
+	out = np.zeros(1)
+
+	def gen():
+		for pt in pts.reshape(2, -1).T:
+			f.eval(out, pt)
+			yield out[0]
+
+	values = list(gen())
+	avalues = np.array(values).reshape(pts.shape[1:])
+	return avalues
+
+
 class Space:
 	"""
 	Finite element discretisation.
@@ -54,46 +73,13 @@ class Space:
 		------
 		The grid points, and the corresponding function evaluations.
 		"""
-
 		# Create matrix x and y coordinates
 		L = self.L
-		[xx,yy] = meshgrid(linspace(-L,L,size), linspace(-L,L,size))
-		coords = zeros((size**2,2), dtype=float)
-		coords[:,0] = xx.reshape(size**2)
-		coords[:,1] = yy.reshape(size**2)
-
-		# Use this array to send into FEniCS.
-		val = array([1.0],dtype=float)
-
-		# Create the dx invariant matrix
-		values = []
-		for c in coords:
-			# Evaluate the FEniCS function `invariant_dx` at the point `c`
-			x.eval(val, ascontiguousarray(c))
-
-			# Append the computed value in a vector
-			values.append(val[0])
-
-		# Reformat the vector of values
-		values = array(values)
-		ux = values.reshape((size,size))
-
-		# Create the dy invariant matrix
-		values = []
-		for c in coords:
-			# Evaluate the FEniCS function `invariant_dy` at the point `c`
-			y.eval(val, ascontiguousarray(c))
-
-			# Append the computed value in a vector
-			values.append(val[0])
-
-		# Reformat the vector of values
-		values = array(values)
-		uy = values.reshape((size,size))
-
-		# Return the two matrices
-		return (xx,yy,ux,uy)
-
+		[xx, yy] = meshgrid(linspace(-L, L, size),  linspace(-L, L, size))
+		pts = np.array([xx, yy])
+		ux = batch_eval(x, pts)
+		uy = batch_eval(y, pts)
+		return xx, yy, ux, uy
 
 def compute_invariants(space, gamma):
 	"""
