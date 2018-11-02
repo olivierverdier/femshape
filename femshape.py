@@ -65,6 +65,9 @@ class Space:
 		self.tree = fem.BoundingBoxTree()
 		self.tree.build(self.mesh)
 
+	def __repr__(self):
+		return "{}(space={},\n\tL={})".format(type(self).__name__, self.V, self.L)
+
 	def grid_evaluation(self, x, y, size=256):
 		"""
 		Evaluates the FEniCS functions x and y on a grid of given size.
@@ -163,6 +166,13 @@ class Current:
 		self.invariant_dx.vector()[:] = invariants[:,0]
 		self.invariant_dy.vector()[:] = invariants[:,1]
 
+	def __repr__(self):
+		npo = np.get_printoptions()
+		np.set_printoptions(threshold=3)
+		str = "{}(space={},\n\tcurve={})".format(type(self).__name__, self.space, self.curve)
+		np.set_printoptions(**npo)
+		return str
+
 def compute_representers(V, inertia, rhs):
 	"""
 	Auxilliary function to solve the equations
@@ -221,6 +231,9 @@ class Representer:
 		self.H1_sq_norm = H1x + H1y
 		self.H2_sq_norm = H2x + H2y
 		# self.compute_representers(V, )
+
+	def __repr__(self):
+		return "{}(current={},\n\tscale={})".format(type(self).__name__, self.current, self.scale)
 
 	def square_distance(self, rep):
 		rdiffx = rep.H2x.vector() - self.H2x.vector()
