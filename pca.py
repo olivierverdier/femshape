@@ -3,42 +3,48 @@ import matplotlib.pyplot as pl
 
 import scipy.optimize as spo
 
-def pca(pe,x,y,name='',scaling=20):
-	"""
-	PCA plot.
+class PCA:
+	def __init__(self, pe, x, y):
+		"""
+		PCA plot.
 
-	Parameters
-	----------
-	x, y : (C x P) arrays, where C is the number of curves, P is the number of points.
-	pe: (C x F) array, where F is the number of features.
-	"""
-	ncurves = np.shape(pe)[0]
-	# Centre the pe matrix
-	a = pe.mean(axis=0)
-	a = (a*np.ones((1,np.shape(pe)[1]))).T
-	a = np.tile(a,(1,np.shape(pe)[0]))
-	pe = pe - a.T
+		Parameters
+		----------
+		x, y : (C x P) arrays, where C is the number of curves, P is the number of points.
+		pe: (C x F) array, where F is the number of features.
+		"""
+		self.pe = pe
+		self.x = x
+		self.y = y
+		self.run()
 
-	# Compute the PCA
-	D,V = np.linalg.eig(np.cov(pe.T))
-	order = np.argsort(D)
-	V = np.real(V)
+	def run(self):
+		# Centre the pe matrix
+		pe = self.pe
+		a = pe.mean(axis=0)
+		a = (a*np.ones((1,np.shape(pe)[1]))).T
+		a = np.tile(a,(1,np.shape(pe)[0]))
+		pe = pe - a.T
 
-	pr = np.dot(pe,V[:,order[-2:]])
-	
-	for i in range(ncurves):
-		pl.plot(-pr[i,0]+ x[i,:]/scaling,pr[i,1] + y[i,:]/scaling)
-		pl.plot(-pr[i,0],pr[i,1],'.')
-		pl.text(-pr[i,0],pr[i,1],i)
-	pl.xlabel('PC1')
-	pl.ylabel('PC2')
-	pl.axis('tight')
-	if name!='':
-		pl.savefig(name+'.pdf',dpi=600)
-	#a = pl.gca()
-	#a.axes.xaxis.set_ticklabels([])
-	#a.axes.yaxis.set_ticklabels([])
-	return pr
+		# Compute the PCA
+		D,V = np.linalg.eig(np.cov(pe.T))
+		order = np.argsort(D)
+		V = np.real(V)
+
+		self.pr = np.dot(pe,V[:,order[-2:]])
+
+	def plot(self, scaling=20):
+		# for i in range(ncurves):
+		for i, (pr, x, y) in enumerate(zip(self.pr, self.x, self.y)):
+			pl.plot(-pr[0]+ x/scaling,pr[1] + y/scaling)
+			pl.plot(-pr[0],pr[1],'.')
+			pl.text(-pr[0],pr[1],i)
+		pl.xlabel('PC1')
+		pl.ylabel('PC2')
+		pl.axis('tight')
+		#a = pl.gca()
+		#a.axes.xaxis.set_ticklabels([])
+		#a.axes.yaxis.set_ticklabels([])
 
 def distance_matrix(pe):
 	ncurves = len(pe)
@@ -49,7 +55,11 @@ def distance_matrix(pe):
 	d = d + d.T
 	return d
 
-def pca_opt(pr, d, x, y, name='', scaling=20):
+def pca_opt(pca, scaling=20):
+	pr = pca.pr
+	x = pca.x
+	y = pca.y
+	d = distance_matrix(pca.pe)
 	ncurves = len(pr)
 	# Optimisation
 	pr2 = np.reshape(pr, [np.shape(pr)[0]*np.shape(pr)[1]])
@@ -76,11 +86,7 @@ def pca_opt(pr, d, x, y, name='', scaling=20):
 		pl.plot(-pr3[i,0],pr3[i,1],'.')
 		pl.text(-pr3[i,0],pr3[i,1],i)
 	pl.axis('equal')
-	pl.xlabel('PC1')
-	pl.ylabel('PC2')
 	pl.axis('tight')
-	if name!='':
-		pl.savefig(name+'_opt.pdf',dpi=600)
 	
 	#a = pl.gca()
 	#a.axes.xaxis.set_ticklabels([])
