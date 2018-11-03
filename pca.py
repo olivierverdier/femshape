@@ -3,32 +3,15 @@ import matplotlib.pyplot as pl
 
 import scipy.optimize as spo
 
-def compute_pca(pe, x, y):
+def pca(pe,x,y,name='',scaling=20):
 	"""
-	Take a representer in either form and compute PCA.
+	PCA plot.
+
+	Parameters
+	----------
+	x, y : (C x P) arrays, where C is the number of curves, P is the number of points.
+	pe: (C x F) array, where F is the number of features.
 	"""
-	#TODO Need to fix the plotting a little
-	D,Evec = np.linalg.eig(np.cov(pe.T))
-	order = np.argsort(D)
-	Evec = np.real(Evec)
-
-	pr = np.dot(pe,Evec[:,order[-2:]])
-	#pl.plot(pr[:,0],pr[:,1],'.')
-	pl.figure()
-	for i in range(np.shape(pr)[0]):
-		pl.plot(pr[i,1],pr[i,0],'.')
-		pl.text(pr[i,1],pr[i,0],i)
-	pl.axis('equal')
-
-	pl.figure()
-	for i in range(np.shape(pr)[0]):
-		pl.plot(pr[i,1] + 0.5*x[i,:],pr[i,0] + 0.5*y[i,:]/5,'.')
-		pl.text(pr[i,1] + x[i,0],pr[i,0] + y[i,0],i)
-	pl.axis('equal')
-
-
-# PCA
-def pca_opt(pe,x,y,name='',scaling=20):
 	ncurves = np.shape(pe)[0]
 	# Centre the pe matrix
 	a = pe.mean(axis=0)
@@ -55,13 +38,19 @@ def pca_opt(pe,x,y,name='',scaling=20):
 	#a = pl.gca()
 	#a.axes.xaxis.set_ticklabels([])
 	#a.axes.yaxis.set_ticklabels([])
-		
+	return pr
+
+def distance_matrix(pe):
+	ncurves = len(pe)
 	d = np.zeros((ncurves,ncurves))    
 	for i in range(ncurves-1):
 		for j in range(i,ncurves):
 			d[i,j] = np.linalg.norm(pe[i,:] - pe[j,:])
 	d = d + d.T
+	return d
 
+def pca_opt(pr, d, x, y, name='', scaling=20):
+	ncurves = len(pr)
 	# Optimisation
 	pr2 = np.reshape(pr, [np.shape(pr)[0]*np.shape(pr)[1]])
 	# N = #params in pr2, M = # datapoints
