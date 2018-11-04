@@ -1,6 +1,6 @@
 # README #
 
-This is a Python library for computing shape invariants of planar curves using FEM and the FEniCS package. To run the module, [FEniCS version 1.5](http://fenicsproject.org) must be installed.
+This is a Python library for computing shape invariants of planar curves using FEM and the FEniCS package. To run the module, [FEniCS](http://fenicsproject.org) must be installed.
 
 ## Getting started ##
 
