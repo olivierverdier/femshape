@@ -33,12 +33,14 @@ class PCA:
 
 		self.pr = np.dot(pe,V[:,order[-2:]])
 
-	def plot(self, scaling=20):
+	def plot(self, scaling=20, shift=None):
+		if shift is None:
+			shift = [0,0]
 		# for i in range(ncurves):
 		for i, (pr, x, y) in enumerate(zip(self.pr, self.x, self.y)):
 			pl.plot(-pr[0]+ x/scaling,pr[1] + y/scaling)
 			pl.plot(-pr[0],pr[1],'.')
-			pl.text(-pr[0],pr[1],i)
+			pl.text(-pr[0]+shift[0],pr[1]+shift[1],i, bbox={'facecolor':'white', 'edgecolor': 'white', 'alpha':.5})
 		pl.xlabel('PC1')
 		pl.ylabel('PC2')
 		pl.axis('tight')
