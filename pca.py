@@ -46,6 +46,14 @@ class PCA:
 		#a.axes.xaxis.set_ticklabels([])
 		#a.axes.yaxis.set_ticklabels([])
 
+def pca_data(representers, order=1):
+	"""
+	Reshape representer vectors for PCA.
+	"""
+	uv = np.array([rep.get(order=order) for rep in representers])
+	pe = uv.reshape(len(representers),-1,order='F')
+	return pe
+
 def distance_matrix(pe):
 	ncurves = len(pe)
 	d = np.zeros((ncurves,ncurves))    
@@ -110,6 +118,7 @@ from femshape import Current, Representer
 def fem_current_pca(currents, x, y):
 	"""
 	Prepare PCA data using FEM current invariants.
+	This should achieve the same result as pca_data.
 	"""
 	#x[0,:] = 0.5*np.cos(np.linspace(0,2*np.pi,npoints,endpoint=False))
 	#y[0,:] = 0.5*np.sin(2*np.linspace(0,2*np.pi,npoints,endpoint=False))
