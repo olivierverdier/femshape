@@ -243,8 +243,8 @@ class Representer:
 		return "{}(current={},\n\tscale={})".format(type(self).__name__, self.current, self.scale)
 
 	def square_distance(self, rep):
-		rdiffx = rep.H2x.vector() - self.H2x.vector()
-		rdiffy = rep.H2y.vector() - self.H2y.vector()
+		rdiffx = rep.H2[0].vector() - self.H2[0].vector()
+		rdiffy = rep.H2[1].vector() - self.H2[1].vector()
 		diffx = rep.current.invariant_dx.vector() - self.current.invariant_dx.vector()
 		diffy = rep.current.invariant_dy.vector() - self.current.invariant_dy.vector()
 		return rdiffx.inner(diffx) + rdiffy.inner(diffy)
