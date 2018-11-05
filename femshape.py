@@ -252,7 +252,7 @@ class Representer:
 
 import matplotlib.pyplot as plt
 
-def plot_representer(representer, order=2, size=32):
+def plot_representer(representer, order=2, size=32, *args, **kwargs):
 	"""
 	Plot the H1 or H2 representer of a given current.
 	"""
@@ -261,11 +261,11 @@ def plot_representer(representer, order=2, size=32):
 	else:
 		x,y = representer.H1
 	xx, yy, ux, uy = representer.current.space.grid_evaluation(x, y, size=size)
-	plot_stream(xx, yy, ux, uy, representer.current.curve)
+	plot_stream(xx, yy, ux, uy, representer.current.curve, *args, **kwargs)
 
-def plot_stream(xx, yy, ux, uy, curve):
+def plot_stream(xx, yy, ux, uy, curve, background_transparency=.2):
 	lengths = np.sqrt(np.square(ux) + np.square(uy))
-	plt.pcolormesh(xx, yy, lengths, alpha=.2)
+	plt.pcolormesh(xx, yy, lengths, alpha=background_transparency)
 	#plt.quiver(xx, yy, ux, uy, lengths, alpha=.3)
 	max_length = np.max(lengths)
 	line_width_function = (lengths/max_length)**2*4
