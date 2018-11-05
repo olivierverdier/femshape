@@ -56,6 +56,10 @@ plot_representer(representer)
 
 ## Further examples
 
-The notebooks contain further examples, especially using PCA to differentiate shapes.
+The notebooks contain further examples:
+
+- [Accuracy of norm computation](https://gist.github.com/olivierverdier/267d1298259f3e0735b49c4e4c88b6a3)
+- [Sensitivity with respect to perturbations](https://gist.github.com/olivierverdier/72d2f7b751703f6498f4650be59e4b62)
+- [Shape classification with PCA](https://gist.github.com/olivierverdier/9d457d75670d949c0e93321449b60dd0)
 
 
