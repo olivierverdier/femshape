@@ -1,6 +1,5 @@
-# README #
-
 This is a Python library for computing shape invariants of planar curves using FEM and the FEniCS package. To run the module, [FEniCS](http://fenicsproject.org) must be installed.
+
 It is the supporting code for the paper [Currents and finite elements as tools for shape space](https://arxiv.org/abs/1702.02780) by James Benn, Stephen Marsland, Robert I McLachlan, Klas Modin and Olivier Verdier.
 
 ## Getting started ##
