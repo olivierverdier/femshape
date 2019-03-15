@@ -115,7 +115,6 @@ def objfun(pl,d):
 
 
 
-from femshape import Current, Representer
 
 def fem_current_pca(currents, x, y):
 	"""
@@ -128,6 +127,7 @@ def fem_current_pca(currents, x, y):
 	
 	#U,V,H1,H2, G, invx, invy = rep_fem(x,y)
 	#G = np.squeeze(G[0,:,:])
+	from femshape import Representer
 	rep = Representer(currents[0])
 	G = rep.inertia.array()
 	invs = np.array([current.invariants for current in currents])
